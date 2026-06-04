@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bitácora Digital · HAAS</title>
+<style>
+:root {
+  --gd:  #0d2818;
+  --gm:  #1a5c2e;
+  --gl:  #2e9e52;
+  --ga:  #4ade80;
+  --gp:  #e8f5ed;
+  --bg:  #f0f6f2;
+  --sur: #ffffff;
+  --bdr: #c3d9c9;
+  --txt: #0d1f12;
+  --mut: #4d7a59;
+  --err: #dc2626;
+  --errp:#fff5f5;
+  --ok:  #166534;
+  --okp: #f0fdf4;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
+
+/* HEADER */
+header{background:var(--gd);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+.logo-txt{color:#fff;font-size:13px;font-weight:700;letter-spacing:.3px;}
+.logo-sub{color:var(--ga);font-size:10px;font-weight:500;margin-top:1px;}
+.hbadge{font-size:10px;color:var(--ga);background:rgba(74,222,128,.12);padding:4px 10px;border-radius:20px;border:1px solid rgba(74,222,128,.25);}
+
+/* PROGRESS BAR */
+.prog-wrap{background:var(--gd);padding:0 18px 14px;}
+.prog-steps{display:flex;gap:4px;}
+.ps{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.15);transition:background .3s;}
+.ps.done{background:var(--ga);}
+.ps.active{background:rgba(74,222,128,.5);}
+.prog-lbl{color:rgba(255,255,255,.5);font-size:9px;text-align:right;margin-top:5px;letter-spacing:.5px;}
+
+/* CONTAINER */
+.wrap{max-width:480px;margin:0 auto;padding:16px;}
+
+/* STEP CARD */
+.step{display:none;}
+.step.active{display:block;}
+.step-head{margin-bottom:18px;}
+.step-num{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gl);margin-bottom:4px;}
+.step-title{font-size:18px;font-weight:700;color:var(--txt);}
+.step-sub{font-size:12px;color:var(--mut);margin-top:3px;}
+
+/* FIELD */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);margin-bottom:5px;}
+.field label span.req{color:var(--err);}
+.field input,.field select,.field textarea{
+  width:100%;padding:11px 13px;border:1.5px solid var(--bdr);border-radius:10px;
+  font-size:15px;color:var(--txt);background:var(--sur);outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  -webkit-appearance:none;appearance:none;
+}
+.field textarea{min-height:80px;resize:vertical;font-size:14px;}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--gl);box-shadow:0 0 0 3px rgba(46,158,82,.15);
+}
+.field.err input,.field.err select,.field.err textarea{border-color:var(--err);}
+.field .errmsg{font-size:11px;color:var(--err);margin-top:4px;display:none;}
+.field.err .errmsg{display:block;}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234d7a59' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+
+/* RADIO TURNO */
+.turno-row{display:flex;gap:8px;}
+.turno-btn{flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--bg);text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--mut);transition:all .15s;user-select:none;}
+.turno-btn.sel{background:var(--gm);color:#fff;border-color:var(--gm);}
+.turno-btn .ico{font-size:18px;display:block;margin-bottom:2px;}
+
+/* ITEMS DEL DIA */
+.items-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.item-row{background:var(--sur);border:1.5px solid var(--bdr);border-radius:10px;padding:10px 12px;position:relative;}
+.item-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.item-num{font-size:10px;font-weight:700;color:var(--gl);letter-spacing:.8px;}
+.item-del{background:none;border:none;font-size:16px;cursor:pointer;color:var(--mut);padding:0 2px;}
+.item-del:active{color:var(--err);}
+.item-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.item-grid .field{margin-bottom:0;}
+.item-lote{grid-column:1/-1;}
+.add-item-btn{width:100%;padding:10px;border-radius:10px;border:1.5px dashed var(--bdr);background:var(--bg);color:var(--gl);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+.add-item-btn:active{background:var(--gp);}
+
+/* PROBLEMA TOGGLE */
+.prob-toggle{display:flex;gap:8px;margin-bottom:12px;}
+.pt{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--bg);text-align:center;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer;transition:all .15s;}
+.pt.sel-no{background:#f0fdf4;color:#166534;border-color:#86efac;}
+.pt.sel-si{background:#fff5f5;color:#dc2626;border-color:#fca5a5;}
+
+/* HOROMETRO */
+.horo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.horo-total{background:var(--gp);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--mut);}
+.horo-total strong{font-size:15px;color:var(--gm);display:block;}
+
+/* BOTONES NAV */
+.nav-row{display:flex;gap:10px;margin-top:20px;}
+.btn-back{flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bdr);background:var(--sur);color:var(--txt);font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-next{flex:2;padding:13px;border-radius:12px;border:none;background:var(--gm);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;box-shadow:0 2px 10px rgba(26,92,46,.3);}
+.btn-next:active{background:var(--gd);}
+.btn-back:active{background:var(--bg);}
+.btn-next:disabled{opacity:.5;cursor:not-allowed;}
+
+/* RESUMEN */
+.resumen-blk{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:12px;}
+.resumen-blk h4{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gl);margin-bottom:10px;}
+.rrow{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gp);}
+.rrow:last-child{border-bottom:none;}
+.rrow .rlbl{color:var(--mut);flex:1;}
+.rrow .rval{font-weight:600;text-align:right;flex:1;}
+.items-resumen{font-size:12px;color:var(--txt);line-height:1.6;}
+
+/* ENVIANDO */
+#stepEnvio{text-align:center;padding:40px 20px;}
+.env-icon{font-size:50px;margin-bottom:16px;}
+.env-title{font-size:20px;font-weight:700;color:var(--txt);}
+.env-sub{font-size:13px;color:var(--mut);margin-top:6px;}
+.env-spinner{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--gm);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.env-ok{color:var(--ok);}
+.env-err{color:var(--err);}
+.btn-nuevo{margin-top:20px;padding:13px 30px;border-radius:12px;border:none;background:var(--gm);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:none;}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--bdr);margin:14px 0;}
+
+/* NOTA */
+.nota{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mut);margin-bottom:14px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo-txt">🌿 AgritecGEO · HAAS</div>
+    <div class="logo-sub">Bitácora Digital de Campo</div>
+  </div>
+  <div class="hbadge">Operador</div>
+</header>
+
+<div class="prog-wrap">
+  <div class="prog-steps">
+    <div class="ps active" id="ps1"></div>
+    <div class="ps" id="ps2"></div>
+    <div class="ps" id="ps3"></div>
+    <div class="ps" id="ps4"></div>
+    <div class="ps" id="ps5"></div>
+    <div class="ps" id="ps6"></div>
+  </div>
+  <div class="prog-lbl" id="progLbl">Paso 1 de 6</div>
+</div>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════════════
+     PASO 1 — Identificación
+═══════════════════════════════════ -->
+<div class="step active" id="step1">
+  <div class="step-head">
+    <div class="step-num">Paso 1 de 6</div>
+    <div class="step-title">👷 Identificación</div>
+    <div class="step-sub">Datos del operador y fecha de la jornada</div>
+  </div>
+
+  <div class="field" id="f-fecha">
+    <label>Fecha de la jornada <span class="req">*</span></label>
+    <input type="date" id="fecha">
+    <div class="errmsg">Campo requerido</div>
+  </div>
+
+  <div class="field" id="f-operador">
+    <label>Nombre del operador <span class="req">*</span></label>
+    <input type="text" id="operador" placeholder="Nombre completo" autocomplete="name">
+    <div class="errmsg">Campo requerido</div>
+  </div>
+
+  <div class="field" id="f-turno">
+    <label>Turno <span class="req">*</span></label>
+    <div class="turno-row">
+      <div class="turno-btn" id="tb-D" onclick="selTurno('Diurno')"><span class="ico">☀️</span>Diurno</div>
+      <div class="turno-btn" id="tb-N" onclick="selTurno('Nocturno')"><span class="ico">🌙</span>Nocturno</div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-next" onclick="goStep(2)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 2 — Maquinaria
+═══════════════════════════════════ -->
+<div class="step" id="step2">
+  <div class="step-head">
+    <div class="step-num">Paso 2 de 6</div>
+    <div class="step-title">🚜 Maquinaria</div>
+    <div class="step-sub">Equipo utilizado en la jornada</div>
+  </div>
+
+  <div class="field" id="f-nroMaquinaria">
+    <label>N° de maquinaria <span class="req">*</span></label>
+    <input type="text" id="nroMaquinaria" placeholder="Ej: T-12, 045...">
+    <div class="errmsg">Campo requerido</div>
+  </div>
+
+  <div class="field" id="f-maquinaria">
+    <label>Tipo de maquinaria <span class="req">*</span></label>
+    <select id="maquinaria">
+      <option value="">— Seleccionar —</option>
+      <option>Tractor</option>
+      <option>Cosechadora</option>
+      <option>Alzadora</option>
+      <option>Cargadora</option>
+      <option>Transportadora</option>
+      <option>Aspersora</option>
+      <option>Otro</option>
+    </select>
+    <div class="errmsg">Campo requerido</div>
+  </div>
+
+  <div class="field" id="f-implemento">
+    <label>Implemento</label>
+    <input type="text" id="implemento" placeholder="Ej: Subsolador, Rastra...">
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goStep(1)">← Atrás</button>
+    <button class="btn-next" onclick="goStep(3)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 3 — Proyecto y Lote
+═══════════════════════════════════ -->
+<div class="step" id="step3">
+  <div class="step-head">
+    <div class="step-num">Paso 3 de 6</div>
+    <div class="step-title">🗺️ Proyecto y Actividades</div>
+    <div class="step-sub">Dónde y qué se hizo en la jornada</div>
+  </div>
+
+  <div class="field" id="f-proyecto">
+    <label>Proyecto <span class="req">*</span></label>
+    <input type="text" id="proyecto" placeholder="Nombre del proyecto / hacienda">
+    <div class="errmsg">Campo requerido</div>
+  </div>
+
+  <div class="field" id="f-cc">
+    <label>Centro de costo (C.C.)</label>
+    <input type="text" id="cc" placeholder="Ej: CC-001">
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="step-num" style="margin-bottom:8px;">ÍTEMS DEL DÍA</div>
+  <div class="nota">📌 Agrega cada lote/actividad trabajada. Puedes agregar varios.</div>
+
+  <div class="items-list" id="itemsList"></div>
+  <button class="add-item-btn" onclick="addItem()">＋ Agregar lote / actividad</button>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goStep(2)">← Atrás</button>
+    <button class="btn-next" onclick="goStep(4)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 4 — Novedades
+═══════════════════════════════════ -->
+<div class="step" id="step4">
+  <div class="step-head">
+    <div class="step-num">Paso 4 de 6</div>
+    <div class="step-title">⚠️ Novedades</div>
+    <div class="step-sub">¿Hubo algún problema durante la jornada?</div>
+  </div>
+
+  <div class="prob-toggle">
+    <div class="pt" id="pt-no" onclick="selProblema(false)">✅ Sin novedad</div>
+    <div class="pt" id="pt-si" onclick="selProblema(true)">🔴 Con problema</div>
+  </div>
+
+  <div id="probSection" style="display:none;">
+    <div class="field" id="f-problema">
+      <label>Descripción del problema <span class="req">*</span></label>
+      <textarea id="problema" placeholder="Describe el problema ocurrido..."></textarea>
+      <div class="errmsg">Campo requerido si hay problema</div>
+    </div>
+    <div class="field" id="f-causa">
+      <label>Causa</label>
+      <select id="causa">
+        <option value="">— Seleccionar —</option>
+        <option>Falla mecánica</option>
+        <option>Falla eléctrica</option>
+        <option>Falla hidráulica</option>
+        <option>Condición climática</option>
+        <option>Condición del terreno</option>
+        <option>Falta de insumos</option>
+        <option>Accidente</option>
+        <option>Otra</option>
+      </select>
+    </div>
+    <div class="field" id="f-motivoDemora">
+      <label>Motivo de demora</label>
+      <input type="text" id="motivoDemora" placeholder="Si generó demora, indicar causa">
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goStep(3)">← Atrás</button>
+    <button class="btn-next" onclick="goStep(5)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 5 — Horómetro e Insumos
+═══════════════════════════════════ -->
+<div class="step" id="step5">
+  <div class="step-head">
+    <div class="step-num">Paso 5 de 6</div>
+    <div class="step-title">⛽ Horómetro e Insumos</div>
+    <div class="step-sub">Lectura de horómetro y consumos del día</div>
+  </div>
+
+  <div class="horo-grid">
+    <div class="field" id="f-horometroIni">
+      <label>Horómetro inicio <span class="req">*</span></label>
+      <input type="number" id="horometroIni" placeholder="0" min="0" step="0.1" inputmode="decimal" onchange="calcHoro()">
+      <div class="errmsg">Campo requerido</div>
+    </div>
+    <div class="field" id="f-horometroFin">
+      <label>Horómetro fin <span class="req">*</span></label>
+      <input type="number" id="horometroFin" placeholder="0" min="0" step="0.1" inputmode="decimal" onchange="calcHoro()">
+      <div class="errmsg">Campo requerido</div>
+    </div>
+  </div>
+  <div class="horo-total" id="horoTotal" style="display:none;margin-bottom:14px;">
+    Horas trabajadas: <strong id="horoHrs">—</strong>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="step-num" style="margin-bottom:8px;">INSUMOS</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="field">
+      <label>Diesel (gal)</label>
+      <input type="number" id="diesel" placeholder="0" min="0" step="0.1" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Aceite motor (qt)</label>
+      <input type="number" id="aceiteMotor" placeholder="0" min="0" step="0.1" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Aceite hidráulico (qt)</label>
+      <input type="number" id="aceiteHidraulico" placeholder="0" min="0" step="0.1" inputmode="decimal">
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goStep(4)">← Atrás</button>
+    <button class="btn-next" onclick="goStep(6)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 6 — Responsables y Resumen
+═══════════════════════════════════ -->
+<div class="step" id="step6">
+  <div class="step-head">
+    <div class="step-num">Paso 6 de 6</div>
+    <div class="step-title">✅ Cierre y Envío</div>
+    <div class="step-sub">Responsables, observaciones y resumen</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="field" id="f-responsable">
+      <label>Responsable <span class="req">*</span></label>
+      <input type="text" id="responsable" placeholder="Nombre">
+      <div class="errmsg">Campo requerido</div>
+    </div>
+    <div class="field">
+      <label>J/A Maquinaria</label>
+      <input type="text" id="jaMaquinaria" placeholder="Nombre">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Observaciones</label>
+    <textarea id="observaciones" placeholder="Notas adicionales de la jornada..."></textarea>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- RESUMEN -->
+  <div class="step-num" style="margin-bottom:10px;">📋 RESUMEN DE LA JORNADA</div>
+  <div id="resumenWrap"></div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goStep(5)">← Atrás</button>
+    <button class="btn-next" id="btnEnviar" onclick="enviar()">📤 Enviar bitácora</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 7 — Enviando / OK
+═══════════════════════════════════ -->
+<div class="step" id="stepEnvio">
+  <div class="env-icon" id="envIcon">⏳</div>
+  <div class="env-spinner" id="envSpinner"></div>
+  <div class="env-title" id="envTitle">Enviando bitácora...</div>
+  <div class="env-sub" id="envSub">Por favor espera un momento</div>
+  <button class="btn-nuevo" id="btnNuevo" onclick="reiniciar()">➕ Nueva bitácora</button>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── CONFIG ──────────────────────────────────────────
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1GLmnsgop-lXMy7GCewKmjH0j_h8StLeRi-iOx-O4Mcsv8XpKD0bAs4bn85KvKibX4w/exec";
+
+// ── ESTADO ───────────────────────────────────────────
+let currentStep = 1;
+let turnoSel = null;
+let tieneProblem = null;
+let items = [];
+let itemCounter = 0;
+
+// ── NAVEGACIÓN ───────────────────────────────────────
+function goStep(n) {
+  if (n > currentStep && !validateStep(currentStep)) return;
+  if (n === 6) buildResumen();
+
+  document.getElementById('step'+currentStep).classList.remove('active');
+
+  if (n === 7) {
+    document.getElementById('stepEnvio').style.display = 'none';
+    document.getElementById('stepEnvio').classList.add('active');
+    return;
+  }
+
+  currentStep = n;
+  document.getElementById('step'+n).classList.add('active');
+
+  // Progress bar
+  for (let i=1;i<=6;i++) {
+    const el = document.getElementById('ps'+i);
+    if (i < n) { el.className='ps done'; }
+    else if (i === n) { el.className='ps active'; }
+    else { el.className='ps'; }
+  }
+  document.getElementById('progLbl').textContent = `Paso ${n} de 6`;
+  window.scrollTo(0,0);
+}
+
+// ── VALIDACIONES ─────────────────────────────────────
+function req(id, fieldId) {
+  const v = document.getElementById(id).value.trim();
+  const f = document.getElementById(fieldId || 'f-'+id);
+  if (!v) { if(f) f.classList.add('err'); return false; }
+  if(f) f.classList.remove('err');
+  return true;
+}
+
+function validateStep(s) {
+  let ok = true;
+  if (s === 1) {
+    ok = req('fecha') && ok;
+    ok = req('operador') && ok;
+    if (!turnoSel) { ok = false; }
+  }
+  if (s === 2) {
+    ok = req('nroMaquinaria') && ok;
+    ok = req('maquinaria') && ok;
+  }
+  if (s === 3) {
+    ok = req('proyecto') && ok;
+  }
+  if (s === 4) {
+    if (tieneProblem === null) { ok = false; }
+    if (tieneProblem) {
+      ok = req('problema', 'f-problema') && ok;
+    }
+  }
+  if (s === 5) {
+    ok = req('horometroIni', 'f-horometroIni') && ok;
+    ok = req('horometroFin', 'f-horometroFin') && ok;
+  }
+  if (s === 6) {
+    ok = req('responsable', 'f-responsable') && ok;
+  }
+  return ok;
+}
+
+// ── TURNO ────────────────────────────────────────────
+function selTurno(t) {
+  turnoSel = t;
+  document.getElementById('tb-D').classList.toggle('sel', t==='Diurno');
+  document.getElementById('tb-N').classList.toggle('sel', t==='Nocturno');
+}
+
+// ── PROBLEMA ─────────────────────────────────────────
+function selProblema(si) {
+  tieneProblem = si;
+  document.getElementById('pt-no').className = 'pt' + (!si ? ' sel-no' : '');
+  document.getElementById('pt-si').className = 'pt' + (si ? ' sel-si' : '');
+  document.getElementById('probSection').style.display = si ? 'block' : 'none';
+}
+
+// ── ITEMS DEL DÍA ────────────────────────────────────
+function addItem() {
+  itemCounter++;
+  const id = itemCounter;
+  items.push(id);
+  renderItems();
+}
+
+function removeItem(id) {
+  items = items.filter(x => x !== id);
+  renderItems();
+}
+
+function renderItems() {
+  const list = document.getElementById('itemsList');
+  list.innerHTML = '';
+  items.forEach((id, idx) => {
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.id = 'item-'+id;
+    div.innerHTML = `
+      <div class="item-row-head">
+        <span class="item-num">ÍTEM ${idx+1}</span>
+        <button class="item-del" onclick="removeItem(${id})">✕</button>
+      </div>
+      <div class="item-grid">
+        <div class="field item-lote">
+          <label>Lote / Zona</label>
+          <input type="text" id="item-lote-${id}" placeholder="Ej: Lote 5, Sector A..." data-item="${id}" data-field="lote">
+        </div>
+        <div class="field">
+          <label>Actividad</label>
+          <input type="text" id="item-act-${id}" placeholder="Ej: Preparación..." data-item="${id}" data-field="actividad">
+        </div>
+        <div class="field">
+          <label>Hora inicio</label>
+          <input type="time" id="item-hi-${id}" data-item="${id}" data-field="horaIni">
+        </div>
+        <div class="field">
+          <label>Hora fin</label>
+          <input type="time" id="item-hf-${id}" data-item="${id}" data-field="horaFin">
+        </div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function getItemsText() {
+  if (items.length === 0) return '—';
+  return items.map((id,i) => {
+    const lote = (document.getElementById('item-lote-'+id)||{}).value || '—';
+    const act = (document.getElementById('item-act-'+id)||{}).value || '—';
+    const hi = (document.getElementById('item-hi-'+id)||{}).value || '';
+    const hf = (document.getElementById('item-hf-'+id)||{}).value || '';
+    const hora = hi||hf ? ` (${hi||'?'}–${hf||'?'})` : '';
+    return `${i+1}. ${lote} | ${act}${hora}`;
+  }).join('\n');
+}
+
+// ── HORÓMETRO ────────────────────────────────────────
+function calcHoro() {
+  const ini = parseFloat(document.getElementById('horometroIni').value)||0;
+  const fin = parseFloat(document.getElementById('horometroFin').value)||0;
+  if (ini>0 && fin>ini) {
+    document.getElementById('horoTotal').style.display = 'block';
+    document.getElementById('horoHrs').textContent = (fin-ini).toFixed(1) + ' h';
+  } else {
+    document.getElementById('horoTotal').style.display = 'none';
+  }
+}
+
+// ── RESUMEN ──────────────────────────────────────────
+function buildResumen() {
+  const wrap = document.getElementById('resumenWrap');
+  const v = id => (document.getElementById(id)||{}).value || '—';
+
+  wrap.innerHTML = `
+    <div class="resumen-blk">
+      <h4>👷 Identificación</h4>
+      <div class="rrow"><span class="rlbl">Fecha</span><span class="rval">${v('fecha')}</span></div>
+      <div class="rrow"><span class="rlbl">Operador</span><span class="rval">${v('operador')}</span></div>
+      <div class="rrow"><span class="rlbl">Turno</span><span class="rval">${turnoSel||'—'}</span></div>
+    </div>
+    <div class="resumen-blk">
+      <h4>🚜 Maquinaria</h4>
+      <div class="rrow"><span class="rlbl">N°</span><span class="rval">${v('nroMaquinaria')}</span></div>
+      <div class="rrow"><span class="rlbl">Tipo</span><span class="rval">${v('maquinaria')}</span></div>
+      <div class="rrow"><span class="rlbl">Implemento</span><span class="rval">${v('implemento')||'—'}</span></div>
+    </div>
+    <div class="resumen-blk">
+      <h4>🗺️ Proyecto</h4>
+      <div class="rrow"><span class="rlbl">Proyecto</span><span class="rval">${v('proyecto')}</span></div>
+      <div class="rrow"><span class="rlbl">C.C.</span><span class="rval">${v('cc')||'—'}</span></div>
+      <div class="rrow"><span class="rlbl">Ítems</span><span class="rval" style="text-align:left;font-size:11px;white-space:pre-line;">${getItemsText()}</span></div>
+    </div>
+    <div class="resumen-blk">
+      <h4>⛽ Horómetro</h4>
+      <div class="rrow"><span class="rlbl">Inicio</span><span class="rval">${v('horometroIni')}</span></div>
+      <div class="rrow"><span class="rlbl">Fin</span><span class="rval">${v('horometroFin')}</span></div>
+      <div class="rrow"><span class="rlbl">Diesel</span><span class="rval">${v('diesel')||'—'} gal</span></div>
+    </div>
+  `;
+}
+
+// ── ENVIAR ───────────────────────────────────────────
+async function enviar() {
+  if (!validateStep(6)) return;
+
+  const v = id => (document.getElementById(id)||{}).value || '';
+
+  const payload = {
+    fecha: v('fecha'),
+    operador: v('operador'),
+    nroMaquinaria: v('nroMaquinaria'),
+    maquinaria: v('maquinaria'),
+    implemento: v('implemento'),
+    turno: turnoSel || '',
+    proyecto: v('proyecto'),
+    cc: v('cc'),
+    items: getItemsText(),
+    tieneProblem: tieneProblem ? 'Sí' : 'No',
+    problema: tieneProblem ? v('problema') : '',
+    causa: tieneProblem ? v('causa') : '',
+    motivoDemora: tieneProblem ? v('motivoDemora') : '',
+    horometroIni: v('horometroIni'),
+    horometroFin: v('horometroFin'),
+    diesel: v('diesel'),
+    aceiteMotor: v('aceiteMotor'),
+    aceiteHidraulico: v('aceiteHidraulico'),
+    responsable: v('responsable'),
+    jaMaquinaria: v('jaMaquinaria'),
+    observaciones: v('observaciones')
+  };
+
+  // Mostrar pantalla de envío
+  document.getElementById('step6').classList.remove('active');
+  const envStep = document.getElementById('stepEnvio');
+  envStep.style.display = 'block';
+  envStep.classList.add('active');
+  document.getElementById('envIcon').textContent = '⏳';
+  document.getElementById('envTitle').textContent = 'Enviando bitácora...';
+  document.getElementById('envSub').textContent = 'Por favor espera un momento';
+  document.getElementById('envSpinner').style.display = 'block';
+  document.getElementById('btnNuevo').style.display = 'none';
+  window.scrollTo(0,0);
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    // no-cors no nos da respuesta, pero si no lanzó error asumimos OK
+    document.getElementById('envSpinner').style.display = 'none';
+    document.getElementById('envIcon').textContent = '✅';
+    document.getElementById('envTitle').className = 'env-title env-ok';
+    document.getElementById('envTitle').textContent = '¡Bitácora enviada!';
+    document.getElementById('envSub').textContent = `Jornada del ${payload.fecha} registrada correctamente. La digitalizadora ya puede verla en el dashboard.`;
+    document.getElementById('btnNuevo').style.display = 'inline-block';
+
+  } catch(e) {
+    document.getElementById('envSpinner').style.display = 'none';
+    document.getElementById('envIcon').textContent = '❌';
+    document.getElementById('envTitle').className = 'env-title env-err';
+    document.getElementById('envTitle').textContent = 'Error al enviar';
+    document.getElementById('envSub').textContent = 'Revisa tu conexión a internet e intenta de nuevo.';
+    document.getElementById('btnNuevo').style.display = 'inline-block';
+    document.getElementById('btnNuevo').textContent = '🔄 Reintentar';
+  }
+}
+
+// ── REINICIAR ────────────────────────────────────────
+function reiniciar() {
+  document.getElementById('stepEnvio').classList.remove('active');
+  document.getElementById('stepEnvio').style.display = 'none';
+  currentStep = 1;
+  turnoSel = null;
+  tieneProblem = null;
+  items = [];
+  itemCounter = 0;
+
+  // Reset form
+  ['fecha','operador','nroMaquinaria','maquinaria','implemento',
+   'proyecto','cc','problema','causa','motivoDemora',
+   'horometroIni','horometroFin','diesel','aceiteMotor','aceiteHidraulico',
+   'responsable','jaMaquinaria','observaciones'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  document.getElementById('tb-D').classList.remove('sel');
+  document.getElementById('tb-N').classList.remove('sel');
+  document.getElementById('pt-no').className = 'pt';
+  document.getElementById('pt-si').className = 'pt';
+  document.getElementById('probSection').style.display = 'none';
+  document.getElementById('itemsList').innerHTML = '';
+  document.getElementById('horoTotal').style.display = 'none';
+
+  for(let i=1;i<=6;i++) document.getElementById('ps'+i).className='ps';
+  document.getElementById('ps1').className='ps active';
+  document.getElementById('progLbl').textContent='Paso 1 de 6';
+
+  document.getElementById('step1').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// Init: poner fecha de hoy por defecto
+document.addEventListener('DOMContentLoaded', () => {
+  const hoy = new Date();
+  const y = hoy.getFullYear();
+  const m = String(hoy.getMonth()+1).padStart(2,'0');
+  const d = String(hoy.getDate()).padStart(2,'0');
+  document.getElementById('fecha').value = `${y}-${m}-${d}`;
+  addItem(); // Iniciar con 1 ítem vacío
+});
+</script>
+</body>
+</html>
